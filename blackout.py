@@ -59,7 +59,6 @@ def get_mac(ip: str):
         
     return mac
 
-
 def spoof():
     global thread_stop, spoof_list
     try:
@@ -78,16 +77,6 @@ def spoof():
             sleep(1)
     except KeyboardInterrupt:
         thread_stop = True
-
-def http_split(payload: bytes):
-    headers = None
-    body = None
-    if payload.find(b"\r\n\r\n") != -1:
-        i = payload.find(b"\r\n\r\n")
-        headers = payload[:i]
-        body = payload[i+4:]
-    return headers, body
-
 
 async def main():
     global all_ip, thread_stop, spoof_list
