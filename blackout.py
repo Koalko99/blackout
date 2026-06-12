@@ -1,7 +1,6 @@
 import scapy.all as scapy
 from subprocess import check_output
 import threading
-import aioping
 import socket
 import asyncio
 from time import sleep
@@ -21,18 +20,6 @@ def shutdown(*args):
     print("\n[!] Goodbye")
     sys.exit(0)
 
-
-async def aping(host, timeout=10):
-    global thread_stop
-    if thread_stop:
-        return
-    try:
-        await aioping.ping(host, timeout=timeout)
-        return host
-    except KeyboardInterrupt:
-        thread_stop = True
-    except:
-        return
 
 def get_mac_by_ip(ip: str):
     global thread_stop
@@ -86,13 +73,19 @@ def spoof():
     except KeyboardInterrupt:
         thread_stop = True
 
+def scan_by_arptable(mask: str):
+    output = check_output("arp -a", text=True)
+    ips = findall(r'\b(?:\d{1,3}\.){3}\d{1,3}\b', output)
+    ips = sorted(filter(lambda x: x != f"{mask}.255" and x != f"{mask}.1" and mask in x, ips), key=lambda x: int(x.split(".")[-1]))
+    return ips
+
 async def main():
     global all_ip, thread_stop, spoof_list
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         sock.connect(("8.8.8.8", 80))
         ip = sock.getsockname()[0]
         mask = ".".join(ip.split(".")[:-1])
-    all_ip = await asyncio.gather(*[aping(f"{mask}.{i}", 5) for i in range(2, 256)])
+    all_ip = scan_by_arptable(mask)
     all_ip = list(filter(None, all_ip))
     for idx, ip in enumerate(all_ip, 1):
         print(f"{idx}. {ip} -- {host_by_ip(ip)}")
@@ -115,7 +108,7 @@ async def main():
                     if not mac:
                         continue
                 spoof_list.update({ip: mac})
-            all_ip = await asyncio.gather(*[aping(f"{mask}.{i}", 5) for i in range(2, 256)])
+            all_ip = scan_by_arptable(mask)
             all_ip = list(filter(None, all_ip))
         except KeyboardInterrupt:
             thread_stop = True
